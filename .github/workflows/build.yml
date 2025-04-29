@@ -23,8 +23,8 @@ jobs:
         curl -L https://github.com/mateusmoutinho/emscripten-easy-install/releases/download/0.1.0/emcc_install.sh | bash -s 4.0.7
 
     - name: Compile C to WebAssembly
-      run: 
-        mkdir -p dist
+      run: |
+        mkdir -p dist 
         emcc teste.c -o dist/teste.js
 
     - name: Upload GitHub Pages artifact
