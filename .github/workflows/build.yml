@@ -1,0 +1,39 @@
+name: Build and Deploy WebAssembly
+
+on:
+  push:
+    branches: [main]  # ou outro branch principal
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Emscripten
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: 3.1.65  # ou ajuste conforme necessário
+
+    - name: Compile teste.c to WebAssembly
+      run: |
+        mkdir -p dist
+        emcc teste.c -o dist/teste.js 
+
+    - name: Upload artifact for deployment
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: ./dist
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v2
