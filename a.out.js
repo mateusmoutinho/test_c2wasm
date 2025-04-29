@@ -1313,8 +1313,6 @@ function c2wasm_create_double(value) { let index = window.c2wasm_get_stack_point
 function c2wasm_create_object() { let index = window.c2wasm_get_stack_point(); window.c2wasm_stack[index] = {}; return index; }
 function c2wasm_create_array() { let index = window.c2wasm_get_stack_point(); window.c2wasm_stack[index] = []; return index; }
 function c2wasm_create_string(value) { let index = window.c2wasm_get_stack_point(); window.c2wasm_stack[index] = window.c2wasm_get_string(value); return index; }
-function c2wasm_soft_free(stack_index) { if(window.c2wasm_stack.length <= stack_index){ return; } window.c2wasm_stack[stack_index] = undefined; }
-function c2wasm_hard_free(stack_index) { if(window.c2wasm_stack.length <= stack_index){ return; } delete window.c2wasm_stack[stack_index]; }
 function c2wasm_start() { if (window.c2wasm_started){ return; } window.c2wasm_started = true; window.c2wasm_false = 0; window.c2wasm_true = 1; window.c2wasm_null = 2; window.c2wasm_undefined = 3; window.c2wasm_stack = []; window.c2wasm_stack[0] = false; window.c2wasm_stack[1] = true; window.c2wasm_stack[2] = null; window.c2wasm_stack[3] = undefined; window.c2wasm_stack[4] = arguments; window.c2wasm_stack[5] = window; window.c2wasm_stack[6] = document; window.c2wasm_stack[7] = document.body; window.c2wasm_get_string = function(c_str ){ let str_array = []; let index = 0; while (true){ let current_char = wasmExports.c2wasm_get_char(c_str,index); if (current_char == 0){ break; } str_array[index] = current_char; index++; } return String.fromCharCode.apply(null, str_array); }; window.c2wasm_get_stack_point = function(){ for(let i= 8; i < window.c2wasm_stack.length; i++){ if (window.c2wasm_stack[i] == undefined){ window.c2wasm_stack[i] = 0; return i; } } window.c2wasm_stack.push(0); return window.c2wasm_stack.length - 1; } }
 function c2wasm_get_object_prop_long(stack_index,prop_name) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); return object[prop_name_formatted]; }
 function c2wasm_get_object_prop_double(stack_index,prop_name) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); return object[prop_name_formatted]; }
@@ -1332,6 +1330,7 @@ function c2wasm_set_object_prop_undefined(stack_index,prop_name) { let object = 
 function c2wasm_set_object_prop_any(stack_index,prop_name,stack_index_value) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); object[prop_name_formatted] = window.c2wasm_stack[stack_index_value]; }
 function private_c2wasm_set_object_prop_function_with_internal_args_raw(stack_index,prop_name,internal_args,callback) { let prop_name_formatted = window.c2wasm_get_string(prop_name); let object = window.c2wasm_stack[stack_index]; let ARGUMENTS_STACK_INDEX = 4; object[prop_name_formatted] = function(){ let old_arguments = window.c2wasm_stack[ARGUMENTS_STACK_INDEX]; window.c2wasm_stack[ARGUMENTS_STACK_INDEX] = arguments; let return_index = wasmExports.c2wasm_call_c_function_with_internal_args(internal_args,callback); window.c2wasm_stack[ARGUMENTS_STACK_INDEX] = old_arguments; return window.c2wasm_stack[return_index]; } }
 function private_c2wasm_set_object_prop_function_raw(stack_index,prop_name,callback) { let prop_name_formatted = window.c2wasm_get_string(prop_name); let object = window.c2wasm_stack[stack_index]; let ARGUMENTS_STACK_INDEX = 4; object[prop_name_formatted] = function(){ let old_arguments = window.c2wasm_stack[ARGUMENTS_STACK_INDEX]; window.c2wasm_stack[ARGUMENTS_STACK_INDEX] = arguments; let return_index = wasmExports.c2wasm_call_c_function(callback); window.c2wasm_stack[ARGUMENTS_STACK_INDEX] = old_arguments; return window.c2wasm_stack[return_index]; } }
+function c2wasm_free(stack_index) { if(window.c2wasm_stack.length <= stack_index){ return; } delete window.c2wasm_stack[stack_index]; }
 var wasmImports = {
   /** @export */
   c2wasm_append_array_string,
@@ -1340,7 +1339,7 @@ var wasmImports = {
   /** @export */
   c2wasm_create_array,
   /** @export */
-  c2wasm_hard_free,
+  c2wasm_free,
   /** @export */
   c2wasm_set_object_prop_string,
   /** @export */

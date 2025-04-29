@@ -345,28 +345,6 @@ EM_JS(long,c2wasm_create_string,(const char *value),{
 
 
 
-
-EM_JS(void,c2wasm_soft_free,(long stack_index),{
-    if(window.c2wasm_stack.length <= stack_index){
-        return;
-    }
-    window.c2wasm_stack[stack_index] = undefined;
-});
-
-EM_JS(void,c2wasm_hard_free,(long stack_index),{
-    if(window.c2wasm_stack.length <= stack_index){
-        return;
-    }
-    delete window.c2wasm_stack[stack_index];
-});
-
-
-
-
-
-
-
-
 /*
     _____                               __                            __     
    /     |                             /  |                          /  |    
@@ -653,6 +631,15 @@ EM_JS(void ,private_c2wasm_set_object_prop_function_raw,(long stack_index, const
 EMSCRIPTEN_KEEPALIVE char c2wasm_get_char(const char *str,int index) {
     return str[index];
 }
+
+
+EM_JS(void,c2wasm_free,(long stack_index),{
+    if(window.c2wasm_stack.length <= stack_index){
+        return;
+    }
+    delete window.c2wasm_stack[stack_index];
+});
+
 
 
 
