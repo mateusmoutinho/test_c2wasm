@@ -20,8 +20,8 @@ jobs:
 
     - name: Install mcc 
       run: |
-        curl -L https://github.com/mateusmoutinho/emscripten-easy-install/releases/download/0.1.0/emcc_install.sh | bash -s 4.0.7
-        emcc --version
+        curl -L https://github.com/mateusmoutinho/emscripten-easy-install/releases/download/0.1.0/emcc_install.sh | bash -s 4.0.7 
+        /home/runner/emsdk/upstream/emscripten/emcc --version
 
     - name: Compile C to WebAssembly
       run: |
