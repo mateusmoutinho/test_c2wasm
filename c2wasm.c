@@ -154,8 +154,22 @@ EM_JS(double ,c2wasm_get_array_double_by_index,(long stack_index, int index), {
 
 EM_JS(long ,c2wasm_get_array_any_by_index,(long stack_index, int index), {
     let array = window.c2wasm_stack[stack_index];
-    let created_index = window.c2wasm_stack.length;
-    window.c2wasm_stack.push(array[created_index]);
+
+    let value = array[index];
+    if(value == false){
+        return  window.c2wasm_false;
+    }
+    if(value == true){
+        return window.c2wasm_true;
+    }
+    if(value == null){
+        return window.c2wasm_null;
+    }
+    if(value == undefined){
+        return window.c2wasm_undefined;
+    }
+    let created_index = window.c2wasm_get_stack_point();
+    window.c2wasm_stack[created_index] = value;
     return created_index;
 });
 
@@ -296,32 +310,32 @@ $$    $$/ $$    $$/         $$    $$/ $$ |      $$       |$$    $$ |  $$  $$/ $$
 */
 
 EM_JS(long,c2wasm_create_long,(long value),{
-    let index = window.c2wasm_stack.length;
-    window.c2wasm_stack.push(value);
+    let index = window.c2wasm_get_stack_point();
+    window.c2wasm_stack[index] = value;
     return index;
 });
 
 EM_JS(long,c2wasm_create_double,(double value),{
-    let index = window.c2wasm_stack.length;
-    window.c2wasm_stack.push(value);
+    let index = window.c2wasm_get_stack_point();
+    window.c2wasm_stack[index] = value;
     return index;
 });
 
 EM_JS(long,c2wasm_create_object,(void),{
-    let index = window.c2wasm_stack.length;
-    window.c2wasm_stack.push({});
+    let index = window.c2wasm_get_stack_point();
+    window.c2wasm_stack[index] = {};
     return index;
 });
 
 EM_JS(long,c2wasm_create_array,(void),{
-    let index = window.c2wasm_stack.length;
-    window.c2wasm_stack.push([]);
+    let index = window.c2wasm_get_stack_point();
+    window.c2wasm_stack[index] = [];
     return index;
 });
 
 EM_JS(long,c2wasm_create_string,(const char *value),{
-    let index = window.c2wasm_stack.length;
-    window.c2wasm_stack.push(value);
+    let index = window.c2wasm_get_stack_point();
+    window.c2wasm_stack[index] = window.c2wasm_get_string(value);
     return index;
 });
 
@@ -336,7 +350,7 @@ EM_JS(void,c2wasm_soft_free,(long stack_index),{
     if(window.c2wasm_stack.length <= stack_index){
         return;
     }
-    window.c2wasm_stack[stack_index] = null;
+    window.c2wasm_stack[stack_index] = undefined;
 });
 
 EM_JS(void,c2wasm_hard_free,(long stack_index),{
@@ -371,7 +385,17 @@ EM_JS(void ,c2wasm_start, (void), {
     if (window.c2wasm_started){
         return;
     }
+
+    
     window.c2wasm_started = true;
+
+
+    window.c2wasm_false = 0;
+    window.c2wasm_true = 1;
+    window.c2wasm_null = 2;
+    window.c2wasm_undefined = 3;
+
+
     window.c2wasm_stack = [];
     window.c2wasm_stack[0] = false;
     window.c2wasm_stack[1] = true;
@@ -383,7 +407,7 @@ EM_JS(void ,c2wasm_start, (void), {
     window.c2wasm_stack[7] = document.body;
 
 
-    window.window.c2wasm_get_string = function(c_str ){
+    window.c2wasm_get_string = function(c_str ){
         let str_array  = [];
         let index = 0;
         while (true){
@@ -395,8 +419,18 @@ EM_JS(void ,c2wasm_start, (void), {
         index++;
         }
         return String.fromCharCode.apply(null, str_array);
+    };
+    
+    window.c2wasm_get_stack_point = function(){
+        for(let i= 8; i < window.c2wasm_stack.length; i++){
+            if (window.c2wasm_stack[i] == undefined){
+                window.c2wasm_stack[i] = 0;
+                return i;
+            }
+        }
+        window.c2wasm_stack.push(0);
+        return window.c2wasm_stack.length - 1;
     }
-
 });
 
 
@@ -436,10 +470,27 @@ EM_JS(double ,c2wasm_get_object_prop_double,(long stack_index, const char *prop_
 
 EM_JS(long , c2wasm_get_object_prop_any,(long stack_index, const char *prop_name),{
     let object = window.c2wasm_stack[stack_index];
+
+
     let prop_name_formatted = window.c2wasm_get_string(prop_name);
-    let index = window.c2wasm_stack.length;
-    window.c2wasm_stack.push(object[prop_name_formatted]);
-    return index;
+    let value  = object[prop_name_formatted];
+    if(value == false){
+        return  window.c2wasm_false;
+    }
+    if(value == true){
+        return window.c2wasm_true;
+    }
+    if(value == null){
+        return window.c2wasm_null;
+    }
+    if(value == undefined){
+        return window.c2wasm_undefined;
+    }
+
+    let created_index = window.c2wasm_get_stack_point();
+    window.c2wasm_stack[created_index] = value;
+    return created_index;
+    
 })
 
 EM_JS(int,c2wasm_is_object_prop_true,(long stack_index, const char *prop_name),{
@@ -468,9 +519,21 @@ EM_JS(long,c2wasm_call_object_prop,(long stack_index, const char *prop_name,long
         arguments = window.c2wasm_stack[args];
     }
     let result = object[prop_name_formatted](...arguments);
-    let index = window.c2wasm_stack.length;
-    window.c2wasm_stack.push(result);
-    return index;
+    if(result == false){
+        return  window.c2wasm_false;
+    }
+    if(result == true){
+        return window.c2wasm_true;
+    }
+    if(result == null){
+        return window.c2wasm_null;
+    }
+    if(result == undefined){
+        return window.c2wasm_undefined;
+    }
+    let created_index = window.c2wasm_get_stack_point();
+    window.c2wasm_stack[created_index] = result;
+    return created_index;
 })
 
 

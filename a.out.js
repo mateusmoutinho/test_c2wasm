@@ -1292,7 +1292,7 @@ function c2wasm_append_array_any(stack_index,stack_index_value) { let array = wi
 function c2wasm_append_array_bool(stack_index,value) { let array = window.c2wasm_stack[stack_index]; array.push(value ? true : false); }
 function c2wasm_get_array_long_by_index(stack_index,index) { let array = window.c2wasm_stack[stack_index]; return array[index]; }
 function c2wasm_get_array_double_by_index(stack_index,index) { let array = window.c2wasm_stack[stack_index]; return array[index]; }
-function c2wasm_get_array_any_by_index(stack_index,index) { let array = window.c2wasm_stack[stack_index]; let created_index = window.c2wasm_stack.length; window.c2wasm_stack.push(array[created_index]); return created_index; }
+function c2wasm_get_array_any_by_index(stack_index,index) { let array = window.c2wasm_stack[stack_index]; let value = array[index]; if(value == false){ return window.c2wasm_false; } if(value == true){ return window.c2wasm_true; } if(value == null){ return window.c2wasm_null; } if(value == undefined){ return window.c2wasm_undefined; } let created_index = window.c2wasm_get_stack_point(); window.c2wasm_stack[created_index] = value; return created_index; }
 function c2wasm_is_array_index_true(stack_index,index) { let array = window.c2wasm_stack[stack_index]; return array[index] == true; }
 function c2wasm_is_array_index_undefined(stack_index,index) { let array = window.c2wasm_stack[stack_index]; return array[index] == undefined; }
 function c2wasm_is_array_index_null(stack_index,index) { let array = window.c2wasm_stack[stack_index]; return array[index] == null; }
@@ -1308,21 +1308,21 @@ function c2wasm_set_array_any_by_index(stack_index,index,stack_index_value) { le
 function c2wasm_set_array_bool_by_index(stack_index,index,value) { let array = window.c2wasm_stack[stack_index]; if (value == 0){ array[index] = false; } if (value > 0){ array[index] = true; } }
 function c2wasm_set_array_null_by_index(stack_index,index) { let array = window.c2wasm_stack[stack_index]; array[index] = null; }
 function c2wasm_set_array_undefined_by_index(stack_index,index) { let array = window.c2wasm_stack[stack_index]; array[index] = undefined; }
-function c2wasm_create_long(value) { let index = window.c2wasm_stack.length; window.c2wasm_stack.push(value); return index; }
-function c2wasm_create_double(value) { let index = window.c2wasm_stack.length; window.c2wasm_stack.push(value); return index; }
-function c2wasm_create_object() { let index = window.c2wasm_stack.length; window.c2wasm_stack.push({}); return index; }
-function c2wasm_create_array() { let index = window.c2wasm_stack.length; window.c2wasm_stack.push([]); return index; }
-function c2wasm_create_string(value) { let index = window.c2wasm_stack.length; window.c2wasm_stack.push(value); return index; }
-function c2wasm_soft_free(stack_index) { if(window.c2wasm_stack.length <= stack_index){ return; } window.c2wasm_stack[stack_index] = null; }
+function c2wasm_create_long(value) { let index = window.c2wasm_get_stack_point(); window.c2wasm_stack[index] = value; return index; }
+function c2wasm_create_double(value) { let index = window.c2wasm_get_stack_point(); window.c2wasm_stack[index] = value; return index; }
+function c2wasm_create_object() { let index = window.c2wasm_get_stack_point(); window.c2wasm_stack[index] = {}; return index; }
+function c2wasm_create_array() { let index = window.c2wasm_get_stack_point(); window.c2wasm_stack[index] = []; return index; }
+function c2wasm_create_string(value) { let index = window.c2wasm_get_stack_point(); window.c2wasm_stack[index] = window.c2wasm_get_string(value); return index; }
+function c2wasm_soft_free(stack_index) { if(window.c2wasm_stack.length <= stack_index){ return; } window.c2wasm_stack[stack_index] = undefined; }
 function c2wasm_hard_free(stack_index) { if(window.c2wasm_stack.length <= stack_index){ return; } delete window.c2wasm_stack[stack_index]; }
-function c2wasm_start() { if (window.c2wasm_started){ return; } window.c2wasm_started = true; window.c2wasm_stack = []; window.c2wasm_stack[0] = false; window.c2wasm_stack[1] = true; window.c2wasm_stack[2] = null; window.c2wasm_stack[3] = undefined; window.c2wasm_stack[4] = arguments; window.c2wasm_stack[5] = window; window.c2wasm_stack[6] = document; window.c2wasm_stack[7] = document.body; window.window.c2wasm_get_string = function(c_str ){ let str_array = []; let index = 0; while (true){ let current_char = wasmExports.c2wasm_get_char(c_str,index); if (current_char == 0){ break; } str_array[index] = current_char; index++; } return String.fromCharCode.apply(null, str_array); } }
+function c2wasm_start() { if (window.c2wasm_started){ return; } window.c2wasm_started = true; window.c2wasm_false = 0; window.c2wasm_true = 1; window.c2wasm_null = 2; window.c2wasm_undefined = 3; window.c2wasm_stack = []; window.c2wasm_stack[0] = false; window.c2wasm_stack[1] = true; window.c2wasm_stack[2] = null; window.c2wasm_stack[3] = undefined; window.c2wasm_stack[4] = arguments; window.c2wasm_stack[5] = window; window.c2wasm_stack[6] = document; window.c2wasm_stack[7] = document.body; window.c2wasm_get_string = function(c_str ){ let str_array = []; let index = 0; while (true){ let current_char = wasmExports.c2wasm_get_char(c_str,index); if (current_char == 0){ break; } str_array[index] = current_char; index++; } return String.fromCharCode.apply(null, str_array); }; window.c2wasm_get_stack_point = function(){ for(let i= 8; i < window.c2wasm_stack.length; i++){ if (window.c2wasm_stack[i] == undefined){ window.c2wasm_stack[i] = 0; return i; } } window.c2wasm_stack.push(0); return window.c2wasm_stack.length - 1; } }
 function c2wasm_get_object_prop_long(stack_index,prop_name) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); return object[prop_name_formatted]; }
 function c2wasm_get_object_prop_double(stack_index,prop_name) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); return object[prop_name_formatted]; }
-function c2wasm_get_object_prop_any(stack_index,prop_name) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); let index = window.c2wasm_stack.length; window.c2wasm_stack.push(object[prop_name_formatted]); return index; }
+function c2wasm_get_object_prop_any(stack_index,prop_name) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); let value = object[prop_name_formatted]; if(value == false){ return window.c2wasm_false; } if(value == true){ return window.c2wasm_true; } if(value == null){ return window.c2wasm_null; } if(value == undefined){ return window.c2wasm_undefined; } let created_index = window.c2wasm_get_stack_point(); window.c2wasm_stack[created_index] = value; return created_index; }
 function c2wasm_is_object_prop_true(stack_index,prop_name) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); return object[prop_name_formatted] == true; }
 function c2wasm_is_object_prop_undefined(stack_index,prop_name) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); return object[prop_name_formatted] == undefined; }
 function c2wasm_is_object_prop_null(stack_index,prop_name) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); return object[prop_name_formatted] == null; }
-function c2wasm_call_object_prop(stack_index,prop_name,args) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); let arguments = undefined; if(args != -1){ arguments = window.c2wasm_stack[args]; } let result = object[prop_name_formatted](...arguments); let index = window.c2wasm_stack.length; window.c2wasm_stack.push(result); return index; }
+function c2wasm_call_object_prop(stack_index,prop_name,args) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); let arguments = undefined; if(args != -1){ arguments = window.c2wasm_stack[args]; } let result = object[prop_name_formatted](...arguments); if(result == false){ return window.c2wasm_false; } if(result == true){ return window.c2wasm_true; } if(result == null){ return window.c2wasm_null; } if(result == undefined){ return window.c2wasm_undefined; } let created_index = window.c2wasm_get_stack_point(); window.c2wasm_stack[created_index] = result; return created_index; }
 function c2wasm_set_object_prop_long(stack_index,prop_name,value) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); object[prop_name_formatted] = value; }
 function c2wasm_set_object_prop_float(stack_index,prop_name,value) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); object[prop_name_formatted] = value; }
 function c2wasm_set_object_prop_string(stack_index,prop_name,value) { let object = window.c2wasm_stack[stack_index]; let prop_name_formatted = window.c2wasm_get_string(prop_name); let value_formatted = window.c2wasm_get_string(value); object[prop_name_formatted] = value_formatted; }
@@ -1339,6 +1339,8 @@ var wasmImports = {
   c2wasm_call_object_prop,
   /** @export */
   c2wasm_create_array,
+  /** @export */
+  c2wasm_hard_free,
   /** @export */
   c2wasm_set_object_prop_string,
   /** @export */
